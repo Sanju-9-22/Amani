@@ -1,21 +1,27 @@
 /*--------------------
 Vars
 --------------------*/
-let progress = 50
+let progress = 0
 let startX = 0
 let active = 0
 let isDown = false
 
 /*--------------------
-Contants
+Constants
 --------------------*/
 const speedWheel = 0.02
 const speedDrag = -0.1
 
 /*--------------------
-Get Z
+Get Z-Index
 --------------------*/
-const getZindex = (array, index) => (array.map((_, i) => (index === i) ? array.length : array.length - Math.abs(index - i)))
+const getZindex = (array, index) => {
+    return array.map((_, i) => {
+        return index === i
+            ? array.length
+            : array.length - Math.abs(index - i)
+    })
+}
 
 /*--------------------
 Items
@@ -23,84 +29,208 @@ Items
 const $items = document.querySelectorAll('.carousel-item')
 const $cursors = document.querySelectorAll('.cursor')
 
+/*--------------------
+Display Items
+--------------------*/
 const displayItems = (item, index, active) => {
-  const zIndex = getZindex([...$items], active)[index]
-  item.style.setProperty('--zIndex', zIndex)
-  item.style.setProperty('--active', (index-active)/$items.length)
+
+    const zIndex = getZindex([...$items], active)[index]
+
+    item.style.setProperty('--zIndex', zIndex)
+
+    item.style.setProperty(
+        '--active',
+        (index - active) / $items.length
+    )
 }
 
 /*--------------------
 Animate
 --------------------*/
 const animate = () => {
-  progress = Math.max(0, Math.min(progress, 100))
-  active = Math.floor(progress/100*($items.length-1))
-  
-  $items.forEach((item, index) => displayItems(item, index, active))
+
+    // Keep progress between 0 and 100
+    progress = Math.max(0, Math.min(progress, 100))
+
+    // IMPORTANT:
+    // Use ROUND instead of FLOOR
+    // so every photo can be selected correctly.
+    active = Math.round(
+        progress / 100 * ($items.length - 1)
+    )
+
+    // Display all items
+    $items.forEach((item, index) => {
+        displayItems(item, index, active)
+    })
 }
+
+/*--------------------
+Start From Photo 1
+--------------------*/
 animate()
+
 
 /*--------------------
 Click on Items
 --------------------*/
 $items.forEach((item, i) => {
-  item.addEventListener('click', () => {
-    progress = (i/$items.length) * 100 + 10
-    animate()
-  })
+
+    item.addEventListener('click', () => {
+
+        // Select exact clicked photo
+        progress =
+            (i / ($items.length - 1)) * 100
+
+        animate()
+
+    })
+
 })
 
+
 /*--------------------
-Handlers
+Mouse Wheel
 --------------------*/
-const handleWheel = e => {
-  const wheelProgress = e.deltaY * speedWheel
-  progress = progress + wheelProgress
-  animate()
+const handleWheel = (e) => {
+
+    const wheelProgress =
+        e.deltaY * speedWheel
+
+    progress += wheelProgress
+
+    animate()
+
 }
 
+
+/*--------------------
+Mouse Move
+--------------------*/
 const handleMouseMove = (e) => {
-  if (e.type === 'mousemove') {
-    $cursors.forEach(($cursor) => {
-      $cursor.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`
-    })
-  }
-  if (!isDown) return
-  const x = e.clientX || (e.touches && e.touches[0].clientX) || 0
-  const mouseProgress = (x - startX) * speedDrag
-  progress = progress + mouseProgress
-  startX = x
-  animate()
+
+    /* Move custom cursor */
+    if (e.type === 'mousemove') {
+
+        $cursors.forEach(($cursor) => {
+
+            $cursor.style.transform =
+                `translate(${e.clientX}px, ${e.clientY}px)`
+
+        })
+
+    }
+
+    /* Stop if mouse is not pressed */
+    if (!isDown) return
+
+    const x =
+        e.clientX ||
+        (e.touches && e.touches[0].clientX) ||
+        0
+
+    const mouseProgress =
+        (x - startX) * speedDrag
+
+    progress += mouseProgress
+
+    startX = x
+
+    animate()
+
 }
 
-const handleMouseDown = e => {
-  isDown = true
-  startX = e.clientX || (e.touches && e.touches[0].clientX) || 0
-}
-
-const handleMouseUp = () => {
-  isDown = false
-}
-
-
-function togglePlay() {
-  const video = document.getElementById('videoPlayer');
-  const playButton = document.getElementById('playButton');
-
-  if (video.style.display === 'none') {
-      video.style.display = 'block'; // Show video
-      playButton.style.display = 'none'; // Hide button
-      video.src += "?autoplay=1"; // Autoplay video
-  }
-}
 
 /*--------------------
-Listeners
+Mouse Down
 --------------------*/
-document.addEventListener('mousewheel', handleWheel)
-document.addEventListener('mousedown', handleMouseDown)
-document.addEventListener('mousemove', handleMouseMove)
-document.addEventListener('mouseup', handleMouseUp)
-document.addEventListener('touchstart', handleMouseDown)
-document.addEventListener('touchmove', handleMouseMove)
-document.addEventListener('touchend', handleMouseUp)
+const handleMouseDown = (e) => {
+
+    isDown = true
+
+    startX =
+        e.clientX ||
+        (e.touches && e.touches[0].clientX) ||
+        0
+
+}
+
+
+/*--------------------
+Mouse Up
+--------------------*/
+const handleMouseUp = () => {
+
+    isDown = false
+
+}
+
+
+/*--------------------
+Video Function
+--------------------*/
+function togglePlay() {
+
+    const video =
+        document.getElementById('videoPlayer')
+
+    const playButton =
+        document.getElementById('playButton')
+
+    if (!video || !playButton) return
+
+    if (video.style.display === 'none') {
+
+        video.style.display = 'block'
+
+        playButton.style.display = 'none'
+
+        video.src += "?autoplay=1"
+
+    }
+
+}
+
+
+/*--------------------
+Event Listeners
+--------------------*/
+
+/* Mouse wheel */
+document.addEventListener(
+    'wheel',
+    handleWheel,
+    { passive: true }
+)
+
+/* Mouse */
+document.addEventListener(
+    'mousedown',
+    handleMouseDown
+)
+
+document.addEventListener(
+    'mousemove',
+    handleMouseMove
+)
+
+document.addEventListener(
+    'mouseup',
+    handleMouseUp
+)
+
+/* Touch */
+document.addEventListener(
+    'touchstart',
+    handleMouseDown
+)
+
+document.addEventListener(
+    'touchmove',
+    handleMouseMove
+)
+
+document.addEventListener(
+    'touchend',
+    handleMouseUp
+)
